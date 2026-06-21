@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Shuffle, Sparkles, RefreshCw, Heart } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowLeft, Shuffle, Sparkles, RefreshCw, Heart, RotateCcw, Star, Clock, Film } from 'lucide-react';
 import { curatedMovies, CuratedMovie } from '@/lib/curated-movies';
 import {
   getTasteRecommendations,
@@ -11,21 +13,18 @@ import {
   fetchMoviePoster,
   assignTasteTagFromGenres,
 } from '@/lib/tmdb';
-import { getProviderById, OTTProvider } from '@/lib/ott-providers';
+import { TASTE_TAGS } from '@/lib/taste-tags';
 import { genresToTasteTags } from '@/lib/taste-matcher';
-import MovieCard from '@/components/results/MovieCard';
 import NoResults from '@/components/results/NoResults';
 
-interface MovieResult {
+interface Suggestion {
   id: number;
   title: string;
   year?: number;
   posterPath: string | null;
   tasteTags: string[];
   matchNote?: string;
-  ottProviders: OTTProvider[];
   isCurated: boolean;
-  sourceLabel?: string;
 }
 
 function matchCuratedMovie(movie: CuratedMovie, selectedGenres: string[], lang: string): boolean {
@@ -37,11 +36,11 @@ function matchCuratedMovie(movie: CuratedMovie, selectedGenres: string[], lang: 
 export default function ResultsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [movies, setMovies] = useState<MovieResult[]>([]);
+  const [pool, setPool] = useState<Suggestion[]>([]);
+  const [current, setCurrent] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [surpriseId, setSurpriseId] = useState<number | null>(null);
-  const [isShuffling, setIsShuffling] = useState(false);
-  const surpriseRef = useRef<HTMLDivElement>(null);
+  const [switching, setSwitching] = useState(false);
+  const [showReason, setShowReason] = useState(false);
 
   const selectedGenres = searchParams.get('genres')?.split(',') || [];
   const language = searchParams.get('language') || '';
@@ -50,7 +49,7 @@ export default function ResultsPage() {
     async function loadMovies() {
       setLoading(true);
       const seen = new Set<number>();
-      const results: MovieResult[] = [];
+      const results: Suggestion[] = [];
 
       const matchedCurated = curatedMovies.filter((m) =>
         matchCuratedMovie(m, selectedGenres, language)
@@ -68,9 +67,7 @@ export default function ResultsPage() {
           posterPath: poster,
           tasteTags: cm.tasteTags,
           matchNote: cm.matchNote,
-          ottProviders: [],
           isCurated: true,
-          sourceLabel: 'Your taste pick',
         });
       }
 
@@ -91,14 +88,10 @@ export default function ResultsPage() {
             year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : undefined,
             posterPath: movie.poster_path,
             tasteTags: [sourceTag],
-            ottProviders: [],
             isCurated: false,
-            sourceLabel: 'Because you like these',
           });
         }
-      } catch {
-        // recommendations failed
-      }
+      } catch {}
 
       try {
         const keywordMovies = await discoverByTasteKeywords({
@@ -118,66 +111,61 @@ export default function ResultsPage() {
             year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : undefined,
             posterPath: movie.poster_path,
             tasteTags: [assignTasteTagFromGenres(movie.genre_ids)],
-            ottProviders: [],
             isCurated: false,
-            sourceLabel: 'New discovery',
           });
         }
-      } catch {
-        // keyword discover failed
-      }
+      } catch {}
 
-      setMovies(results.slice(0, 40));
+      const shuffled = results.sort(() => Math.random() - 0.5);
+      setPool(shuffled);
+      setCurrent(0);
       setLoading(false);
     }
 
-    if (language) {
-      loadMovies();
-    } else {
-      setLoading(false);
-    }
+    if (language) loadMovies();
+    else setLoading(false);
   }, [selectedGenres.join(','), language]);
 
-  const handleSurpriseMe = useCallback(() => {
-    if (movies.length === 0 || isShuffling) return;
-    setIsShuffling(true);
-    setSurpriseId(null);
+  const handleNext = useCallback(() => {
+    if (switching || pool.length <= 1) return;
+    setSwitching(true);
+    setShowReason(false);
+    const nextIdx = (current + 1) % pool.length;
+    setTimeout(() => {
+      setCurrent(nextIdx);
+      setSwitching(false);
+    }, 200);
+  }, [current, pool.length, switching]);
 
+  const handleSurprise = useCallback(() => {
+    if (switching || pool.length <= 1) return;
+    setSwitching(true);
+    setShowReason(false);
     let count = 0;
-    const maxCycles = 12;
     const interval = setInterval(() => {
-      const randomIdx = Math.floor(Math.random() * movies.length);
-      setSurpriseId(movies[randomIdx].id);
+      setCurrent(Math.floor(Math.random() * pool.length));
       count++;
-      if (count >= maxCycles) {
+      if (count >= 8) {
         clearInterval(interval);
-        const finalIdx = Math.floor(Math.random() * movies.length);
-        setSurpriseId(movies[finalIdx].id);
-        setIsShuffling(false);
-
+        setCurrent(Math.floor(Math.random() * pool.length));
+        setSwitching(false);
         import('canvas-confetti').then((confetti) => {
           confetti.default({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 },
+            particleCount: 80, spread: 70, origin: { y: 0.6 },
             colors: ['#F472B6', '#A78BFA', '#34D399', '#FBBF24'],
           });
         });
-
-        setTimeout(() => {
-          surpriseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
       }
     }, 80);
-  }, [movies, isShuffling]);
+  }, [pool.length, switching]);
 
-  if (!language) {
-    return <NoResults />;
-  }
+  const movie = pool[current];
+
+  if (!language) return <NoResults />;
 
   return (
     <div className="flex flex-col min-h-dvh px-4 py-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <motion.button
           onClick={() => router.push('/select')}
           whileHover={{ scale: 1.05 }}
@@ -186,26 +174,14 @@ export default function ResultsPage() {
         >
           <ArrowLeft size={22} className="text-text-muted" />
         </motion.button>
-        <div className="flex gap-2">
-          <motion.button
-            onClick={handleSurpriseMe}
-            disabled={isShuffling || movies.length === 0}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-warm to-primary text-white text-sm font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50"
-          >
-            <Shuffle size={16} />
-            Surprise Me!
-          </motion.button>
-          <motion.button
-            onClick={() => router.refresh()}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-2 rounded-xl hover:bg-primary/10 transition-colors"
-          >
-            <RefreshCw size={18} className="text-text-muted" />
-          </motion.button>
-        </div>
+        <motion.button
+          onClick={() => router.refresh()}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="p-2 rounded-xl hover:bg-primary/10 transition-colors"
+        >
+          <RefreshCw size={18} className="text-text-muted" />
+        </motion.button>
       </div>
 
       {loading ? (
@@ -217,54 +193,132 @@ export default function ResultsPage() {
             <Heart size={32} className="text-primary" />
           </motion.div>
         </div>
-      ) : movies.length === 0 ? (
+      ) : !movie ? (
         <NoResults />
       ) : (
-        <>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-text-muted text-sm mb-4"
-          >
-            Curated from your taste ✨
-          </motion.p>
+        <div className="flex-1 flex flex-col gap-5">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={movie.id}
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="flex-1 flex flex-col gap-4"
+            >
+              <Link href={`/movie/${movie.id}`} className="block">
+                <div className="relative w-full aspect-[2/3] rounded-3xl overflow-hidden bg-gradient-to-br from-primary-light/15 to-secondary-light/15 shadow-lg shadow-primary/10">
+                  {movie.posterPath ? (
+                    <Image
+                      src={`https://image.tmdb.org/t/p/w500${movie.posterPath}`}
+                      alt={movie.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 480px) 100vw, 500px"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Film size={64} className="text-text-muted/20" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <h1 className="text-2xl font-extrabold text-white drop-shadow-lg">
+                      {movie.title}
+                    </h1>
+                    {movie.year && (
+                      <p className="text-white/80 text-sm font-medium drop-shadow">
+                        {movie.year}
+                      </p>
+                    )}
+                  </div>
+                  {movie.isCurated && (
+                    <div className="absolute top-3 right-3 bg-primary text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                      <Heart size={10} fill="white" />
+                      Your taste
+                    </div>
+                  )}
+                </div>
+              </Link>
 
-          <div className="grid grid-cols-2 gap-3.5 pb-8" ref={surpriseRef}>
-            {movies.map((movie, i) => (
-              <div
-                key={movie.id}
-                className={
-                  surpriseId === movie.id
-                    ? 'relative ring-4 ring-primary rounded-2xl ring-offset-2 ring-offset-bg-base animate-pulse'
-                    : ''
-                }
-              >
-                <MovieCard movie={movie} index={i} />
-              </div>
-            ))}
-          </div>
-
-          <AnimatePresence>
-            {movies.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="sticky bottom-0 pb-4 pt-2 bg-gradient-to-t from-bg-base via-bg-base/95 to-transparent"
-              >
-                <motion.button
-                  onClick={handleSurpriseMe}
-                  disabled={isShuffling}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-warm to-primary text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+              <div className="flex flex-wrap gap-2 items-center">
+                {movie.tasteTags.map((tagId) => {
+                  const tag = TASTE_TAGS[tagId];
+                  if (!tag) return null;
+                  return (
+                    <span
+                      key={tagId}
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-accent-light/40 text-emerald-700"
+                    >
+                      <span>{tag.emoji}</span>
+                      <span>{tag.label}</span>
+                    </span>
+                  );
+                })}
+                <Link
+                  href={`/movie/${movie.id}`}
+                  className="ml-auto text-xs text-primary font-bold"
                 >
-                  <Shuffle size={18} />
-                  {isShuffling ? 'Picking...' : 'Surprise Me! 🎲'}
-                </motion.button>
-              </motion.div>
-            )}
+                  Details →
+                </Link>
+              </div>
+
+              {movie.matchNote && (
+                <>
+                  <button
+                    onClick={() => setShowReason(!showReason)}
+                    className="flex items-center gap-2 text-sm text-text-muted"
+                  >
+                    <Heart size={14} className={showReason ? 'text-primary' : ''} />
+                    Why this movie?
+                  </button>
+                  <AnimatePresence>
+                    {showReason && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-gradient-to-r from-primary-light/10 to-secondary-light/10 rounded-2xl p-4 border border-primary/10 overflow-hidden"
+                      >
+                        <p className="text-sm text-text leading-relaxed font-medium">
+                          {movie.matchNote}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              )}
+            </motion.div>
           </AnimatePresence>
-        </>
+
+          <div className="flex flex-col gap-3 pt-2 pb-4">
+            <motion.button
+              onClick={handleSurprise}
+              disabled={switching || pool.length <= 1}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-warm to-primary text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+            >
+              <Shuffle size={18} />
+              {switching ? 'Picking...' : 'Surprise Me! 🎲'}
+            </motion.button>
+
+            <motion.button
+              onClick={handleNext}
+              disabled={switching || pool.length <= 1}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-3 rounded-2xl border-2 border-border text-text-light font-semibold text-sm flex items-center justify-center gap-2 hover:border-primary/30 transition-colors disabled:opacity-30"
+            >
+              <RotateCcw size={16} />
+              Not feeling it — show another
+            </motion.button>
+
+            <p className="text-center text-xs text-text-muted/60">
+              {pool.length} movie{pool.length !== 1 ? 's' : ''} in your lineup
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
