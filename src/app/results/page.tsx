@@ -41,6 +41,8 @@ export default function ResultsPage() {
 
   const selectedGenres = searchParams.get('genres')?.split(',') || [];
   const language = searchParams.get('language') || '';
+  const fromQuiz = searchParams.get('fromQuiz') === 'true';
+  const quizTags = searchParams.get('tags')?.split(',').filter(Boolean) || [];
 
   useEffect(() => {
     async function loadMovies() {
@@ -48,22 +50,26 @@ export default function ResultsPage() {
       const seen = new Set<number>();
       const results: Suggestion[] = [];
 
-      const tasteTags = genresToTasteTags(selectedGenres);
+      const tasteTags = fromQuiz && quizTags.length > 0
+        ? quizTags
+        : genresToTasteTags(selectedGenres);
       const watchedIds = getWatchedIds();
       const curatedIds = new Set(curatedMovies.map((m) => m.tmdbId));
 
-      const matchedCurated = curatedMovies.filter((m) =>
-        m.language === language &&
-        (selectedGenres.length === 0 || m.genres.some((g) => selectedGenres.includes(g)))
-      );
+      if (!fromQuiz) {
+        const matchedCurated = curatedMovies.filter((m) =>
+          m.language === language &&
+          (selectedGenres.length === 0 || m.genres.some((g) => selectedGenres.includes(g)))
+        );
 
-      for (const cm of matchedCurated) {
-        seen.add(cm.tmdbId);
-        results.push({
-          id: cm.tmdbId, title: cm.title, year: cm.year,
-          posterPath: null, tasteTags: cm.tasteTags,
-          matchNote: cm.matchNote, isCurated: true,
-        });
+        for (const cm of matchedCurated) {
+          seen.add(cm.tmdbId);
+          results.push({
+            id: cm.tmdbId, title: cm.title, year: cm.year,
+            posterPath: null, tasteTags: cm.tasteTags,
+            matchNote: cm.matchNote, isCurated: true,
+          });
+        }
       }
 
       try {
@@ -120,7 +126,7 @@ export default function ResultsPage() {
 
     if (language) loadMovies();
     else setLoading(false);
-  }, [selectedGenres.join(','), language]);
+  }, [selectedGenres.join(','), language, fromQuiz, quizTags.join(',')]);
 
   const advance = useCallback(() => {
     if (pool.length <= 1) return;

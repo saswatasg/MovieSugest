@@ -110,7 +110,7 @@ export default function HomePage() {
               className="w-full px-4"
             >
               <motion.button
-                onClick={() => router.push('/select')}
+                onClick={() => router.push('/quiz')}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 className="w-full py-4 px-8 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-lg shadow-lg shadow-primary/25 flex items-center justify-center gap-3"
