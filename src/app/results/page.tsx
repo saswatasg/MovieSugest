@@ -5,16 +5,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Shuffle, Sparkles, RefreshCw, Heart, RotateCcw, Star, Clock, Film } from 'lucide-react';
+import {
+  ArrowLeft, Shuffle, Sparkles, RefreshCw,
+  Heart, RotateCcw, Eye, EyeOff, Film, Check
+} from 'lucide-react';
 import { curatedMovies, CuratedMovie } from '@/lib/curated-movies';
 import {
-  getTasteRecommendations,
-  discoverByTasteKeywords,
-  fetchMoviePoster,
-  assignTasteTagFromGenres,
+  getTasteRecommendations, discoverByTasteKeywords,
+  fetchMoviePoster, assignTasteTagFromGenres,
 } from '@/lib/tmdb';
 import { TASTE_TAGS } from '@/lib/taste-tags';
 import { genresToTasteTags } from '@/lib/taste-matcher';
+import { getWatchedIds, addWatchedId } from '@/lib/watched-storage';
 import NoResults from '@/components/results/NoResults';
 
 interface Suggestion {
@@ -27,12 +29,6 @@ interface Suggestion {
   isCurated: boolean;
 }
 
-function matchCuratedMovie(movie: CuratedMovie, selectedGenres: string[], lang: string): boolean {
-  if (movie.language !== lang) return false;
-  if (selectedGenres.length === 0) return true;
-  return movie.genres.some((g) => selectedGenres.includes(g));
-}
-
 export default function ResultsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,6 +37,7 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
   const [showReason, setShowReason] = useState(false);
+  const [markedWatched, setMarkedWatched] = useState<number | null>(null);
 
   const selectedGenres = searchParams.get('genres')?.split(',') || [];
   const language = searchParams.get('language') || '';
@@ -51,30 +48,28 @@ export default function ResultsPage() {
       const seen = new Set<number>();
       const results: Suggestion[] = [];
 
-      const matchedCurated = curatedMovies.filter((m) =>
-        matchCuratedMovie(m, selectedGenres, language)
-      );
-
       const tasteTags = genresToTasteTags(selectedGenres);
+      const watchedIds = getWatchedIds();
+      const curatedIds = new Set(curatedMovies.map((m) => m.tmdbId));
+
+      const matchedCurated = curatedMovies.filter((m) =>
+        m.language === language &&
+        (selectedGenres.length === 0 || m.genres.some((g) => selectedGenres.includes(g)))
+      );
 
       for (const cm of matchedCurated) {
         seen.add(cm.tmdbId);
-        const poster = await fetchMoviePoster(cm.tmdbId).catch(() => null);
         results.push({
-          id: cm.tmdbId,
-          title: cm.title,
-          year: cm.year,
-          posterPath: poster,
-          tasteTags: cm.tasteTags,
-          matchNote: cm.matchNote,
-          isCurated: true,
+          id: cm.tmdbId, title: cm.title, year: cm.year,
+          posterPath: null, tasteTags: cm.tasteTags,
+          matchNote: cm.matchNote, isCurated: true,
         });
       }
 
       try {
         const recommendations = await getTasteRecommendations({
           selectedTags: tasteTags,
-          language: language === 'english' ? 'en' : language === 'hindi' ? 'hi' : 'bn',
+          language: { english: 'en', hindi: 'hi', bengali: 'bn' }[language] || undefined,
           watchRegion: 'IN',
           watchProviders: '8|9|342|350|385|220',
         });
@@ -83,12 +78,10 @@ export default function ResultsPage() {
           if (seen.has(movie.id)) continue;
           seen.add(movie.id);
           results.push({
-            id: movie.id,
-            title: movie.title,
+            id: movie.id, title: movie.title,
             year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : undefined,
             posterPath: movie.poster_path,
-            tasteTags: [sourceTag],
-            isCurated: false,
+            tasteTags: [sourceTag], isCurated: false,
           });
         }
       } catch {}
@@ -96,7 +89,7 @@ export default function ResultsPage() {
       try {
         const keywordMovies = await discoverByTasteKeywords({
           selectedTags: tasteTags,
-          with_original_language: language === 'english' ? 'en' : language === 'hindi' ? 'hi' : undefined,
+          with_original_language: { english: 'en', hindi: 'hi' }[language] || undefined,
           watch_region: 'IN',
           with_watch_providers: '8|9|342|350|385|220',
           sort_by: 'popularity.desc',
@@ -106,8 +99,7 @@ export default function ResultsPage() {
           if (seen.has(movie.id)) continue;
           seen.add(movie.id);
           results.push({
-            id: movie.id,
-            title: movie.title,
+            id: movie.id, title: movie.title,
             year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : undefined,
             posterPath: movie.poster_path,
             tasteTags: [assignTasteTagFromGenres(movie.genre_ids)],
@@ -116,7 +108,11 @@ export default function ResultsPage() {
         }
       } catch {}
 
-      const shuffled = results.sort(() => Math.random() - 0.5);
+      const filtered = results.filter(
+        (r) => !curatedIds.has(r.id) && !watchedIds.includes(r.id)
+      );
+
+      const shuffled = filtered.sort(() => Math.random() - 0.5);
       setPool(shuffled);
       setCurrent(0);
       setLoading(false);
@@ -126,16 +122,19 @@ export default function ResultsPage() {
     else setLoading(false);
   }, [selectedGenres.join(','), language]);
 
+  const advance = useCallback(() => {
+    if (pool.length <= 1) return;
+    const next = (current + 1) % pool.length;
+    setCurrent(next);
+    setShowReason(false);
+    setMarkedWatched(null);
+  }, [current, pool.length]);
+
   const handleNext = useCallback(() => {
     if (switching || pool.length <= 1) return;
     setSwitching(true);
-    setShowReason(false);
-    const nextIdx = (current + 1) % pool.length;
-    setTimeout(() => {
-      setCurrent(nextIdx);
-      setSwitching(false);
-    }, 200);
-  }, [current, pool.length, switching]);
+    setTimeout(() => { advance(); setSwitching(false); }, 200);
+  }, [switching, pool.length, advance]);
 
   const handleSurprise = useCallback(() => {
     if (switching || pool.length <= 1) return;
@@ -149,6 +148,7 @@ export default function ResultsPage() {
         clearInterval(interval);
         setCurrent(Math.floor(Math.random() * pool.length));
         setSwitching(false);
+        setMarkedWatched(null);
         import('canvas-confetti').then((confetti) => {
           confetti.default({
             particleCount: 80, spread: 70, origin: { y: 0.6 },
@@ -160,6 +160,18 @@ export default function ResultsPage() {
   }, [pool.length, switching]);
 
   const movie = pool[current];
+
+  const handleWatched = useCallback(() => {
+    if (!movie || movie.isCurated) return;
+    addWatchedId(movie.id);
+    setMarkedWatched(movie.id);
+    const movieId = movie.id;
+    setTimeout(() => {
+      setPool((prev) => prev.filter((m) => m.id !== movieId));
+      setMarkedWatched(null);
+      advance();
+    }, 800);
+  }, [movie, advance]);
 
   if (!language) return <NoResults />;
 
@@ -194,7 +206,39 @@ export default function ResultsPage() {
           </motion.div>
         </div>
       ) : !movie ? (
-        <NoResults />
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring' }}
+          >
+            <Sparkles size={56} className="text-primary/40" />
+          </motion.div>
+          <div>
+            <h2 className="text-xl font-bold text-text">All caught up!</h2>
+            <p className="text-text-muted text-sm mt-2">
+              You&apos;ve worked through all suggestions. Try different genres or
+              language, or reset your watched list.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push('/select')}
+              className="px-5 py-2.5 rounded-xl bg-primary text-white font-bold text-sm"
+            >
+              Try different mood
+            </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem('11pm_watched');
+                router.refresh();
+              }}
+              className="px-5 py-2.5 rounded-xl border-2 border-border text-text-light font-semibold text-sm"
+            >
+              Reset watched
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="flex-1 flex flex-col gap-5">
           <AnimatePresence mode="wait">
@@ -232,12 +276,6 @@ export default function ResultsPage() {
                       </p>
                     )}
                   </div>
-                  {movie.isCurated && (
-                    <div className="absolute top-3 right-3 bg-primary text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
-                      <Heart size={10} fill="white" />
-                      Your taste
-                    </div>
-                  )}
                 </div>
               </Link>
 
@@ -288,10 +326,34 @@ export default function ResultsPage() {
                   </AnimatePresence>
                 </>
               )}
+
+              {markedWatched === movie.id && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-center gap-2 text-emerald-600 text-sm font-bold py-2"
+                >
+                  <Check size={16} />
+                  Marked as watched — removed from suggestions
+                </motion.div>
+              )}
             </motion.div>
           </AnimatePresence>
 
           <div className="flex flex-col gap-3 pt-2 pb-4">
+            {!movie.isCurated && (
+              <motion.button
+                onClick={handleWatched}
+                disabled={switching}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.97 }}
+                className="w-full py-2.5 rounded-xl border-2 border-emerald-200 text-emerald-600 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+              >
+                <Check size={16} />
+                Already watched it — suggest something new
+              </motion.button>
+            )}
+
             <motion.button
               onClick={handleSurprise}
               disabled={switching || pool.length <= 1}
@@ -315,7 +377,7 @@ export default function ResultsPage() {
             </motion.button>
 
             <p className="text-center text-xs text-text-muted/60">
-              {pool.length} movie{pool.length !== 1 ? 's' : ''} in your lineup
+              {pool.length} new suggestion{pool.length !== 1 ? 's' : ''} for you
             </p>
           </div>
         </div>
