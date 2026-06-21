@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#FFF8F7"/>
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F472B6"/>
+      <stop offset="100%" stop-color="#A78BFA"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="40" width="432" height="432" rx="60" fill="url(#g)" opacity="0.12"/>
+  <text x="256" y="290" text-anchor="middle" font-size="200">🎬</text>
+  <text x="256" y="380" text-anchor="middle" font-size="36" font-family="sans-serif" font-weight="bold" fill="#374151">11 PM Cinema</text>
+</svg>
