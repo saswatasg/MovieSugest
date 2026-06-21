@@ -3,11 +3,16 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Shuffle, Sparkles, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Shuffle, Sparkles, RefreshCw, Heart } from 'lucide-react';
 import { curatedMovies, CuratedMovie } from '@/lib/curated-movies';
-import { discoverMovies, assignTasteTagFromGenres } from '@/lib/tmdb';
+import {
+  getTasteRecommendations,
+  discoverByTasteKeywords,
+  fetchMoviePoster,
+  assignTasteTagFromGenres,
+} from '@/lib/tmdb';
 import { getProviderById, OTTProvider } from '@/lib/ott-providers';
-import { getGenreIds, getLanguageCode } from '@/lib/tmdb';
+import { genresToTasteTags } from '@/lib/taste-matcher';
 import MovieCard from '@/components/results/MovieCard';
 import NoResults from '@/components/results/NoResults';
 
@@ -20,20 +25,10 @@ interface MovieResult {
   matchNote?: string;
   ottProviders: OTTProvider[];
   isCurated: boolean;
+  sourceLabel?: string;
 }
 
-function getLanguageFilter(lang: string) {
-  if (lang === 'english') return 'en';
-  if (lang === 'hindi') return 'hi';
-  if (lang === 'bengali') return 'bn';
-  return undefined;
-}
-
-function matchCuratedMovie(
-  movie: CuratedMovie,
-  selectedGenres: string[],
-  lang: string
-): boolean {
+function matchCuratedMovie(movie: CuratedMovie, selectedGenres: string[], lang: string): boolean {
   if (movie.language !== lang) return false;
   if (selectedGenres.length === 0) return true;
   return movie.genres.some((g) => selectedGenres.includes(g));
@@ -54,61 +49,85 @@ export default function ResultsPage() {
   useEffect(() => {
     async function loadMovies() {
       setLoading(true);
+      const seen = new Set<number>();
       const results: MovieResult[] = [];
 
-      const langFilter = getLanguageFilter(language);
       const matchedCurated = curatedMovies.filter((m) =>
         matchCuratedMovie(m, selectedGenres, language)
       );
 
+      const tasteTags = genresToTasteTags(selectedGenres);
+
       for (const cm of matchedCurated) {
+        seen.add(cm.tmdbId);
+        const poster = await fetchMoviePoster(cm.tmdbId).catch(() => null);
         results.push({
           id: cm.tmdbId,
           title: cm.title,
           year: cm.year,
-          posterPath: null,
+          posterPath: poster,
           tasteTags: cm.tasteTags,
           matchNote: cm.matchNote,
           ottProviders: [],
           isCurated: true,
+          sourceLabel: 'Your taste pick',
         });
       }
 
       try {
-        const genreIds = getGenreIds(selectedGenres);
-        const tmdbLang = getLanguageCode(language);
+        const recommendations = await getTasteRecommendations({
+          selectedTags: tasteTags,
+          language: language === 'english' ? 'en' : language === 'hindi' ? 'hi' : 'bn',
+          watchRegion: 'IN',
+          watchProviders: '8|9|342|350|385|220',
+        });
 
-        const discoverParams: Record<string, string> = {
+        for (const { movie, sourceTag } of recommendations) {
+          if (seen.has(movie.id)) continue;
+          seen.add(movie.id);
+          results.push({
+            id: movie.id,
+            title: movie.title,
+            year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : undefined,
+            posterPath: movie.poster_path,
+            tasteTags: [sourceTag],
+            ottProviders: [],
+            isCurated: false,
+            sourceLabel: 'Because you like these',
+          });
+        }
+      } catch {
+        // recommendations failed
+      }
+
+      try {
+        const keywordMovies = await discoverByTasteKeywords({
+          selectedTags: tasteTags,
+          with_original_language: language === 'english' ? 'en' : language === 'hindi' ? 'hi' : undefined,
           watch_region: 'IN',
           with_watch_providers: '8|9|342|350|385|220',
           sort_by: 'popularity.desc',
-          'vote_count.gte': '100',
-        };
-        if (genreIds) discoverParams.with_genres = genreIds;
-        if (tmdbLang) discoverParams.with_original_language = tmdbLang;
+        });
 
-        const tmdbResults = await discoverMovies(discoverParams);
-
-        const existingIds = new Set(results.map((r) => r.id));
-        for (const tm of tmdbResults.results) {
-          if (!existingIds.has(tm.id)) {
-            existingIds.add(tm.id);
-            results.push({
-              id: tm.id,
-              title: tm.title,
-              year: tm.release_date ? parseInt(tm.release_date.substring(0, 4)) : undefined,
-              posterPath: tm.poster_path,
-              tasteTags: [assignTasteTagFromGenres(tm.genre_ids)],
-              ottProviders: [],
-              isCurated: false,
-            });
-          }
+        for (const movie of keywordMovies) {
+          if (seen.has(movie.id)) continue;
+          seen.add(movie.id);
+          results.push({
+            id: movie.id,
+            title: movie.title,
+            year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : undefined,
+            posterPath: movie.poster_path,
+            tasteTags: [assignTasteTagFromGenres(movie.genre_ids)],
+            ottProviders: [],
+            isCurated: false,
+            sourceLabel: 'New discovery',
+          });
         }
       } catch {
-        // TMDB discover failed, just show curated
+        // keyword discover failed
       }
 
-      setMovies(results.slice(0, 30));
+      setMovies(results.slice(0, 40));
       setLoading(false);
     }
 
@@ -195,7 +214,7 @@ export default function ResultsPage() {
             animate={{ rotate: 360 }}
             transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
           >
-            <Sparkles size={32} className="text-primary" />
+            <Heart size={32} className="text-primary" />
           </motion.div>
         </div>
       ) : movies.length === 0 ? (
@@ -207,8 +226,7 @@ export default function ResultsPage() {
             animate={{ opacity: 1 }}
             className="text-text-muted text-sm mb-4"
           >
-            {movies.length} movie{movies.length !== 1 ? 's' : ''} found{' '}
-            <span className="text-primary font-semibold">✨</span>
+            Curated from your taste ✨
           </motion.p>
 
           <div className="grid grid-cols-2 gap-3.5 pb-8" ref={surpriseRef}>
