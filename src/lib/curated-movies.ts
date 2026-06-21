@@ -10,7 +10,7 @@ export interface CuratedMovie {
 
 export const curatedMovies: CuratedMovie[] = [
   {
-    tmdbId: 44826,
+    tmdbId: 127501,
     title: 'Barfi!',
     year: 2012,
     language: 'hindi',
@@ -19,7 +19,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Love that is pure, wordless, and beautifully strange — this one is pure heart.',
   },
   {
-    tmdbId: 282813,
+    tmdbId: 21297,
     title: 'Wake Up Sid',
     year: 2009,
     language: 'hindi',
@@ -28,7 +28,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Growing into yourself, finding your path, and falling in love along the way.',
   },
   {
-    tmdbId: 2107,
+    tmdbId: 509,
     title: 'Notting Hill',
     year: 1999,
     language: 'english',
@@ -37,7 +37,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Ordinary person, extraordinary love — and that famous bench. Pure comfort romance.',
   },
   {
-    tmdbId: 56715,
+    tmdbId: 339274,
     title: 'Tamasha',
     year: 2015,
     language: 'hindi',
@@ -46,7 +46,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'About the masks we wear and the courage to be ourselves — and finding love that sees through.',
   },
   {
-    tmdbId: 122,
+    tmdbId: 1402,
     title: 'The Pursuit of Happyness',
     year: 2006,
     language: 'english',
@@ -55,7 +55,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Dignity, ambition, and a father\'s love. Hits you right in the chest.',
   },
   {
-    tmdbId: 230,
+    tmdbId: 15774,
     title: 'Swades',
     year: 2004,
     language: 'hindi',
@@ -64,7 +64,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'What does home mean? What do we owe our roots? A deeply moral, moving journey.',
   },
   {
-    tmdbId: 504,
+    tmdbId: 16727,
     title: 'The Namesake',
     year: 2006,
     language: 'english',
@@ -73,7 +73,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Identity, belonging, love across generations — a film that feels like a beautiful book.',
   },
   {
-    tmdbId: 950387,
+    tmdbId: 937278,
     title: 'A Man Called Otto',
     year: 2022,
     language: 'english',
@@ -82,7 +82,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'A grumpy heart that learns to feel again. Tears and warmth in equal measure.',
   },
   {
-    tmdbId: 121,
+    tmdbId: 391713,
     title: 'Lady Bird',
     year: 2017,
     language: 'english',
@@ -91,7 +91,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Trying to find yourself while pushing away the people who love you most. So real.',
   },
   {
-    tmdbId: 1903,
+    tmdbId: 26237,
     title: 'Anand',
     year: 1971,
     language: 'hindi',
@@ -100,7 +100,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'A celebration of life in the face of mortality. Babu Moshai — pure timeless magic.',
   },
   {
-    tmdbId: 11395,
+    tmdbId: 280795,
     title: 'Haider',
     year: 2014,
     language: 'hindi',
@@ -109,7 +109,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Hamlet in Kashmir. Poetry, grief, and political anguish — devastatingly beautiful.',
   },
   {
-    tmdbId: 64499,
+    tmdbId: 653221,
     title: 'Hridayam',
     year: 2022,
     language: 'hindi',
@@ -118,7 +118,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Life phases, old love, new love, growing through it all. A whole lifetime in one film.',
   },
   {
-    tmdbId: 24438,
+    tmdbId: 41252,
     title: 'Raincoat',
     year: 2004,
     language: 'hindi',
@@ -127,7 +127,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Two people, one afternoon, and a lifetime of what-ifs. Restrained and devastating.',
   },
   {
-    tmdbId: 11104,
+    tmdbId: 9502,
     title: 'Kung Fu Panda',
     year: 2008,
     language: 'english',
@@ -136,7 +136,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'A panda who dreamed. Also — it\'s not a cartoon, it\'s a philosophy. Inner peace.',
   },
   {
-    tmdbId: 10153,
+    tmdbId: 79464,
     title: 'Rockstar',
     year: 2011,
     language: 'hindi',
@@ -145,7 +145,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Love as inspiration, love as destruction. Music, longing, and the price of art.',
   },
   {
-    tmdbId: 10997,
+    tmdbId: 897,
     title: 'Aparajito',
     year: 1957,
     language: 'bengali',
@@ -154,7 +154,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'The second chapter of Apu\'s journey — leaving home, losing a parent, growing up. Ray\'s masterpiece.',
   },
   {
-    tmdbId: 140420,
+    tmdbId: 597089,
     title: 'Article 15',
     year: 2019,
     language: 'hindi',
@@ -163,7 +163,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Anger as art. A film that asks uncomfortable questions and demands answers.',
   },
   {
-    tmdbId: 480530,
+    tmdbId: 653457,
     title: 'Mimi',
     year: 2021,
     language: 'hindi',
@@ -172,7 +172,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Surrogacy, dreams, and what it means to be a mother. Quirky yet deeply moving.',
   },
   {
-    tmdbId: 297,
+    tmdbId: 336203,
     title: 'Masaan',
     year: 2015,
     language: 'hindi',
@@ -181,7 +181,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Loss, longing, and the search for dignity on the ghats of Varanasi. Poetry in cinema.',
   },
   {
-    tmdbId: 569,
+    tmdbId: 527511,
     title: 'Bhavesh Joshi Superhero',
     year: 2018,
     language: 'hindi',
@@ -190,7 +190,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'The ordinary person\'s responsibility in an unjust system. Vigilantism with a conscience.',
   },
   {
-    tmdbId: 9479,
+    tmdbId: 360814,
     title: 'Dangal',
     year: 2016,
     language: 'hindi',
@@ -199,7 +199,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Father, daughters, dreams, and breaking every rule. Theatrical, emotional, earned.',
   },
   {
-    tmdbId: 9593,
+    tmdbId: 401285,
     title: 'Jagga Jasoos',
     year: 2017,
     language: 'hindi',
@@ -208,34 +208,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Underrated, misunderstood, and wildly inventive. A musical detective story like no other.',
   },
   {
-    tmdbId: 949,
-    title: 'Jurassic World Dominion',
-    year: 2022,
-    language: 'english',
-    genres: ['action', 'adventure', 'sci-fi'],
-    tasteTags: ['whimsical'],
-    matchNote: 'Big dinosaurs, bigger spectacle. Sometimes you just need to watch things get chased.',
-  },
-  {
-    tmdbId: 746,
-    title: 'KGF 2',
-    year: 2022,
-    language: 'hindi',
-    genres: ['action', 'drama'],
-    tasteTags: [],
-    matchNote: 'Macho spectacle at its most maximalist. Not your usual taste, but sometimes the gold calls.',
-  },
-  {
-    tmdbId: 343,
-    title: '13B',
-    year: 2009,
-    language: 'hindi',
-    genres: ['horror', 'thriller'],
-    tasteTags: ['thought-provoking'],
-    matchNote: 'A TV that shows the future — and a family trapped in it. Clever, creepy, underrated.',
-  },
-  {
-    tmdbId: 245,
+    tmdbId: 765019,
     title: 'Jug Jugg Jeeyo',
     year: 2022,
     language: 'hindi',
@@ -244,31 +217,22 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Family, divorce, and love in all its messy forms. Entertaining with unexpected heart.',
   },
   {
-    tmdbId: 297,
-    title: 'Flames',
-    year: 2018,
+    tmdbId: 587412,
+    title: 'KGF 2',
+    year: 2022,
     language: 'hindi',
-    genres: ['romance', 'coming-of-age'],
-    tasteTags: ['coming-of-age', 'soft-romance'],
-    matchNote: 'Tuition classes, first love, and the sweetness of growing up. Nostalgia in every frame.',
+    genres: ['action', 'drama'],
+    tasteTags: [],
+    matchNote: 'Macho spectacle at its most maximalist. Not your usual taste, but sometimes the gold calls.',
   },
   {
-    tmdbId: 124903,
+    tmdbId: 206789,
     title: 'Hirak Rajar Deshe',
     year: 1980,
     language: 'bengali',
     genres: ['drama', 'social-political', 'whimsical'],
     tasteTags: ['social-drama', 'whimsical'],
     matchNote: 'Satyajit Ray\'s political allegory wrapped in fantasy — a film that fights fascism with imagination.',
-  },
-  {
-    tmdbId: 11866,
-    title: 'The Apu Trilogy',
-    year: 1959,
-    language: 'bengali',
-    genres: ['drama', 'coming-of-age'],
-    tasteTags: ['coming-of-age', 'literary-melancholy'],
-    matchNote: 'The original coming-of-age story. Apu\'s journey from boyhood to manhood is cinema\'s greatest gift.',
   },
   {
     tmdbId: 862,
@@ -289,7 +253,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Remembering those we\'ve lost — and the music that keeps them alive. Have tissues ready.',
   },
   {
-    tmdbId: 301,
+    tmdbId: 150540,
     title: 'Inside Out',
     year: 2015,
     language: 'english',
@@ -307,7 +271,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'A girl turns into a red panda when she feels too much. Chaotic, cute, and deeply felt.',
   },
   {
-    tmdbId: 3548,
+    tmdbId: 20453,
     title: '3 Idiots',
     year: 2009,
     language: 'hindi',
@@ -316,7 +280,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Chasing excellence vs chasing success — a film that taught a generation to follow their heart.',
   },
   {
-    tmdbId: 1262,
+    tmdbId: 61202,
     title: 'Zindagi Na Milegi Dobara',
     year: 2011,
     language: 'hindi',
@@ -325,7 +289,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Friendship, fear, and living fully. A road trip that feels like a deep breath.',
   },
   {
-    tmdbId: 10625,
+    tmdbId: 185008,
     title: 'Yeh Jawaani Hai Deewani',
     year: 2013,
     language: 'hindi',
@@ -334,7 +298,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'Growing up, drifting apart, and finding your way back. Badtameez dil forever.',
   },
   {
-    tmdbId: 836,
+    tmdbId: 191714,
     title: 'The Lunchbox',
     year: 2013,
     language: 'hindi',
@@ -343,7 +307,7 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'A lunchbox gone astray, and a connection that grows through handwritten notes. Quiet and profound.',
   },
   {
-    tmdbId: 240832,
+    tmdbId: 332835,
     title: 'Piku',
     year: 2015,
     language: 'hindi',
@@ -352,12 +316,30 @@ export const curatedMovies: CuratedMovie[] = [
     matchNote: 'A father-daughter road trip, constipation jokes, and Deepika in a nightie. Perfectly imperfect.',
   },
   {
-    tmdbId: 11868,
+    tmdbId: 35790,
     title: 'Charulata',
     year: 1964,
     language: 'bengali',
     genres: ['drama', 'romance'],
     tasteTags: ['literary-melancholy', 'soft-romance'],
     matchNote: 'A lonely wife, a charming cousin, and unspoken desires. Ray\'s most exquisitely tender film.',
+  },
+  {
+    tmdbId: 34649,
+    title: 'Pather Panchali',
+    year: 1955,
+    language: 'bengali',
+    genres: ['drama', 'coming-of-age'],
+    tasteTags: ['coming-of-age', 'literary-melancholy'],
+    matchNote: 'Where it all began. Apu\'s childhood in a Bengal village — the purest cinema ever made.',
+  },
+  {
+    tmdbId: 10877,
+    title: 'Dil Chahta Hai',
+    year: 2001,
+    language: 'hindi',
+    genres: ['comedy', 'drama', 'coming-of-age'],
+    tasteTags: ['coming-of-age'],
+    matchNote: 'Friendship, love, and growing up in the new India. The film that changed Hindi cinema.',
   },
 ];
