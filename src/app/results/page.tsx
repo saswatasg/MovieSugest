@@ -9,11 +9,9 @@ import {
   ArrowLeft, Shuffle, Sparkles, RefreshCw,
   Heart, RotateCcw, Eye, EyeOff, Film, Check
 } from 'lucide-react';
-import { curatedMovies, CuratedMovie } from '@/lib/curated-movies';
-import {
-  getTasteRecommendations, discoverByTasteKeywords,
-  fetchMoviePoster, assignTasteTagFromGenres,
-} from '@/lib/tmdb';
+import { curatedMovies } from '@/lib/curated-movies';
+import { getMovieSuggestions, ScoredSuggestion } from '@/lib/taste-algo';
+import { fetchMoviePoster } from '@/lib/tmdb';
 import { TASTE_TAGS } from '@/lib/taste-tags';
 import { genresToTasteTags } from '@/lib/taste-matcher';
 import { getWatchedIds, addWatchedId } from '@/lib/watched-storage';
@@ -26,7 +24,8 @@ interface Suggestion {
   posterPath: string | null;
   tasteTags: string[];
   matchNote?: string;
-  isCurated: boolean;
+  score: number;
+  voteAverage: number;
 }
 
 export default function ResultsPage() {
@@ -47,79 +46,41 @@ export default function ResultsPage() {
   useEffect(() => {
     async function loadMovies() {
       setLoading(true);
-      const seen = new Set<number>();
-      const results: Suggestion[] = [];
 
       const tasteTags = fromQuiz && quizTags.length > 0
         ? quizTags
         : genresToTasteTags(selectedGenres);
-      const watchedIds = getWatchedIds();
-      const curatedIds = new Set(curatedMovies.map((m) => m.tmdbId));
 
-      if (!fromQuiz) {
-        const matchedCurated = curatedMovies.filter((m) =>
-          m.language === language &&
-          (selectedGenres.length === 0 || m.genres.some((g) => selectedGenres.includes(g)))
-        );
-
-        for (const cm of matchedCurated) {
-          seen.add(cm.tmdbId);
-          results.push({
-            id: cm.tmdbId, title: cm.title, year: cm.year,
-            posterPath: null, tasteTags: cm.tasteTags,
-            matchNote: cm.matchNote, isCurated: true,
-          });
-        }
+      if (tasteTags.length === 0) {
+        setLoading(false);
+        return;
       }
 
-      try {
-        const recommendations = await getTasteRecommendations({
-          selectedTags: tasteTags,
-          language: { english: 'en', hindi: 'hi', bengali: 'bn' }[language] || undefined,
-          watchRegion: 'IN',
-          watchProviders: '8|9|342|350|385|220',
-        });
-
-        for (const { movie, sourceTag } of recommendations) {
-          if (seen.has(movie.id)) continue;
-          seen.add(movie.id);
-          results.push({
-            id: movie.id, title: movie.title,
-            year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : undefined,
-            posterPath: movie.poster_path,
-            tasteTags: [sourceTag], isCurated: false,
-          });
-        }
-      } catch {}
+      const watchedIds = getWatchedIds();
+      const curatedIds = new Set(curatedMovies.map((m) => m.tmdbId));
+      const excludeIds = [...watchedIds, ...curatedIds];
 
       try {
-        const keywordMovies = await discoverByTasteKeywords({
-          selectedTags: tasteTags,
-          with_original_language: { english: 'en', hindi: 'hi' }[language] || undefined,
-          watch_region: 'IN',
-          with_watch_providers: '8|9|342|350|385|220',
-          sort_by: 'popularity.desc',
+        const suggestions = await getMovieSuggestions({
+          tasteTags,
+          language,
+          excludeIds,
         });
 
-        for (const movie of keywordMovies) {
-          if (seen.has(movie.id)) continue;
-          seen.add(movie.id);
-          results.push({
-            id: movie.id, title: movie.title,
-            year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : undefined,
-            posterPath: movie.poster_path,
-            tasteTags: [assignTasteTagFromGenres(movie.genre_ids)],
-            isCurated: false,
-          });
-        }
-      } catch {}
+        const results: Suggestion[] = suggestions.map((s) => ({
+          id: s.id,
+          title: s.title,
+          year: s.year,
+          posterPath: s.posterPath,
+          tasteTags: s.matchedTags,
+          score: s.score,
+          voteAverage: s.voteAverage,
+        }));
 
-      const filtered = results.filter(
-        (r) => !curatedIds.has(r.id) && !watchedIds.includes(r.id)
-      );
-
-      const shuffled = filtered.sort(() => Math.random() - 0.5);
-      setPool(shuffled);
+        setPool(results);
+      } catch {
+        setPool([]);
+      }
       setCurrent(0);
       setLoading(false);
     }
@@ -168,7 +129,7 @@ export default function ResultsPage() {
   const movie = pool[current];
 
   const handleWatched = useCallback(() => {
-    if (!movie || movie.isCurated) return;
+    if (!movie) return;
     addWatchedId(movie.id);
     setMarkedWatched(movie.id);
     const movieId = movie.id;
@@ -347,7 +308,6 @@ export default function ResultsPage() {
           </AnimatePresence>
 
           <div className="flex flex-col gap-3 pt-2 pb-4">
-            {!movie.isCurated && (
               <motion.button
                 onClick={handleWatched}
                 disabled={switching}
@@ -358,7 +318,6 @@ export default function ResultsPage() {
                 <Check size={16} />
                 Already watched it — suggest something new
               </motion.button>
-            )}
 
             <motion.button
               onClick={handleSurprise}
